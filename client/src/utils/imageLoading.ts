@@ -1,90 +1,137 @@
 /**
- * Image loading utilities for smoother image transitions
+ * Image loading optimization utility
+ * Enhances image loading across the site
  */
 
-// Preload a single image
-export function preloadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
+// Helper to check if running in production
+const isProduction = () => {
+  return import.meta.env.PROD || window.location.hostname !== 'localhost';
+};
 
-// Preload multiple images
-export function preloadImages(sources: string[]): Promise<HTMLImageElement[]> {
-  return Promise.all(sources.map(preloadImage));
-}
-
-// Apply smooth image loading with lazy loading and fade-in effect
-export function setupLazyImageLoading(): void {
-  // If the browser supports IntersectionObserver, use it for lazy loading
-  if ('IntersectionObserver' in window) {
-    const lazyImageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const lazyImage = entry.target as HTMLImageElement;
-          
-          // Get the source from data-src attribute
-          const src = lazyImage.dataset.src;
-          
-          if (src) {
-            // Start loading the image
-            lazyImage.src = src;
-            
-            // Add transition class
-            lazyImage.classList.add('image-fade-in');
-            
-            // When the image is loaded, add the loaded class to trigger the transition
-            lazyImage.onload = () => {
-              lazyImage.classList.add('loaded');
-              // Remove the data-src attribute to avoid re-processing
-              delete lazyImage.dataset.src;
-            };
-            
-            // Stop observing the image
-            observer.unobserve(lazyImage);
-          }
+// Initialize lazy loading for images
+export function initImageLoading() {
+  // Only initialize if 'lazysizes' is used in the project
+  if (typeof window !== 'undefined') {
+    // Add lazyload class to images that don't already have it
+    document.querySelectorAll('img:not(.lazyload)').forEach((img: Element) => {
+      const imgElement = img as HTMLImageElement;
+      if (!imgElement.classList.contains('lazyload') && 
+          !imgElement.src.includes('data:image') && 
+          !imgElement.src.includes('blob:')) {
+        
+        // Store original src
+        const originalSrc = imgElement.getAttribute('src');
+        if (originalSrc) {
+          imgElement.setAttribute('data-src', originalSrc);
+          imgElement.classList.add('lazyload');
+          // Set a lightweight placeholder until the image loads
+          imgElement.setAttribute('src', 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1 1\'%3E%3C/svg%3E');
         }
-      });
-    }, {
-      rootMargin: '100px 0px', // Start loading images when they're 100px from entering the viewport
-      threshold: 0.01 // Trigger when at least 1% of the image is visible
+      }
     });
-    
-    // Observe all images with data-src attribute
+
+    // Fix image paths for Vercel deployment
+    fixImagePathsForProduction();
+  }
+}
+
+// Fix paths for images when deployed to production
+export function fixImagePathsForProduction() {
+  if (isProduction()) {
+    // In production, ensure image paths are correct
     document.querySelectorAll('img[data-src]').forEach(img => {
-      lazyImageObserver.observe(img);
+      const dataSrc = img.getAttribute('data-src');
+      if (dataSrc && dataSrc.startsWith('/assets/') && !dataSrc.startsWith('https://')) {
+        // Update relative paths to use the correct base path
+        img.setAttribute('data-src', dataSrc);
+      }
     });
-  } else {
-    // Fallback for browsers that don't support IntersectionObserver
-    document.querySelectorAll('img[data-src]').forEach(img => {
-      const lazyImage = img as HTMLImageElement;
-      const src = lazyImage.dataset.src;
-      
-      if (src) {
-        lazyImage.src = src;
-        lazyImage.classList.add('image-fade-in');
-        lazyImage.onload = () => {
-          lazyImage.classList.add('loaded');
-          delete lazyImage.dataset.src;
-        };
+
+    // Also check background images in style attributes
+    document.querySelectorAll('[style*="background-image"]').forEach(el => {
+      const style = el.getAttribute('style');
+      if (style && style.includes('/assets/') && !style.includes('https://')) {
+        // Fix background image URLs
+        const fixedStyle = style.replace(
+          /background-image:\s*url\(['"]?(\/assets\/[^'"\)]+)['"]?\)/g, 
+          (match, path) => `background-image: url("${path}")`
+        );
+        el.setAttribute('style', fixedStyle);
       }
     });
   }
 }
 
-// Initialize the image loading system
-export function initImageLoading(): void {
-  // Run the setup on DOMContentLoaded
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupLazyImageLoading);
-  } else {
-    // DOM is already ready, call the function directly
-    setupLazyImageLoading();
+// Register a MutationObserver to handle dynamically added content
+export function registerImageObserver() {
+  if (typeof window !== 'undefined' && 'MutationObserver' in window) {
+    const observer = new MutationObserver((mutations) => {
+      let shouldFixPaths = false;
+      
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length) {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === 1) { // Element node
+              const element = node as Element;
+              
+              // Check for new images
+              element.querySelectorAll('img:not(.lazyload)').forEach((img: Element) => {
+                const imgElement = img as HTMLImageElement;
+                if (!imgElement.classList.contains('lazyload') && 
+                    !imgElement.src.includes('data:image') && 
+                    !imgElement.src.includes('blob:')) {
+                  const originalSrc = imgElement.getAttribute('src');
+                  if (originalSrc) {
+                    imgElement.setAttribute('data-src', originalSrc);
+                    imgElement.classList.add('lazyload');
+                    imgElement.setAttribute('src', 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1 1\'%3E%3C/svg%3E');
+                  }
+                }
+              });
+              
+              shouldFixPaths = true;
+            }
+          });
+        }
+      });
+      
+      if (shouldFixPaths) {
+        fixImagePathsForProduction();
+      }
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    return observer;
   }
   
-  // Re-run the setup when new content is loaded via AJAX
-  // This can be called manually after loading new content
-} 
+  return null;
+}
+
+// Export a unified function to handle everything
+export function setupOptimizedImageLoading() {
+  initImageLoading();
+  const observer = registerImageObserver();
+  
+  // Periodically check for new images
+  const intervalId = setInterval(() => {
+    fixImagePathsForProduction();
+  }, 3000);
+  
+  // Return a cleanup function
+  return () => {
+    observer?.disconnect();
+    clearInterval(intervalId);
+  };
+}
+
+// Add export for direct use in components
+export default {
+  initImageLoading,
+  fixImagePathsForProduction,
+  registerImageObserver,
+  setupOptimizedImageLoading
+}; 

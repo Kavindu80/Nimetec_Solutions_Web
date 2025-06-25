@@ -4,7 +4,7 @@ import "./index.css";
 import "./styles/premium-effects.css";
 import "./styles/smooth-animations.css";
 import { enableSmoothScrolling, initSmoothScrolling } from "./utils/smoothScroll";
-import { initImageLoading } from "./utils/imageLoading";
+import { setupOptimizedImageLoading } from "./utils/imageLoading";
 import { initAnimationOptimizer } from "./utils/animationOptimizer";
 
 // Add JS detection class for CSS fallbacks
@@ -22,8 +22,8 @@ function AppWithScrolling() {
     // Initialize anchor link smooth scrolling with a header offset of 80px
     initSmoothScrolling(80);
     
-    // Initialize image loading effects
-    initImageLoading();
+    // Initialize enhanced image loading with optimizations for Vercel deployment
+    setupOptimizedImageLoading();
     
     // Initialize animation optimizations
     initAnimationOptimizer();

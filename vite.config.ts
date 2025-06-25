@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
@@ -26,7 +27,11 @@ export default defineConfig({
       }
     },
     sourcemap: process.env.NODE_ENV !== "production",
+    assetsDir: "assets",
     rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, "client", "index.html"),
+      },
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
@@ -61,7 +66,20 @@ export default defineConfig({
           ],
           'animation-vendor': ['framer-motion'],
           'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod']
-        }
+        },
+        assetFileNames: (assetInfo) => {
+          const fileName = assetInfo.name || '';
+          const fileExt = fileName.split('.').at(-1) || '';
+          let extType = fileExt;
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico|webp/i.test(fileExt)) {
+            extType = 'img';
+          } else if (/woff|woff2|eot|ttf|otf/i.test(fileExt)) {
+            extType = 'fonts';
+          }
+          return `assets/${extType}/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
       }
     }
   },

@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import compression from "compression";
 import helmet from "helmet";
+import path from "path";
 
 const app = express();
 
@@ -49,7 +50,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize server
+// For Vercel, we need to export the app as a module
+export default app;
+
+// Configure the server based on environment
 (async () => {
   const server = await registerRoutes(app);
 
@@ -71,15 +75,26 @@ app.use((req, res, next) => {
     }
   });
 
-  // Set up the appropriate environment
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
+  // In Vercel serverless environment, just serve static files
+  if (process.env.VERCEL === "1") {
+    // Ensure we serve static files correctly
+    const distPath = path.resolve(process.cwd(), "dist/public");
+    app.use(express.static(distPath));
+    
+    // SPA fallback
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+    
+    log("Server initialized for Vercel serverless environment");
   } else {
-    serveStatic(app);
-  }
+    // Local or non-Vercel environment
+    if (process.env.NODE_ENV === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
-  // Only start the server if not on Vercel
-  if (process.env.VERCEL !== "1") {
     // Use process.env.PORT for compatibility with hosting platforms or default to 5000
     const port = process.env.PORT || 5000;
     server.listen({
@@ -93,6 +108,3 @@ app.use((req, res, next) => {
   console.error("Failed to start server:", err);
   process.exit(1);
 });
-
-// Export for Vercel
-export default app;

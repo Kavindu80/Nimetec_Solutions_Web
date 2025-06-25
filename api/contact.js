@@ -1,9 +1,4 @@
-// Vercel serverless function entry point
-import express from 'express';
 import { z } from 'zod';
-
-const app = express();
-app.use(express.json());
 
 // Contact form validation schema
 const contactSchema = z.object({
@@ -14,8 +9,12 @@ const contactSchema = z.object({
   message: z.string().min(10, "Message must be at least 10 characters long")
 });
 
-// Contact form submission endpoint
-app.post("/contact", async (req, res) => {
+export default async function handler(req, res) {
+  // Only allow POST method
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
   try {
     const validatedData = contactSchema.parse(req.body);
     
@@ -29,31 +28,21 @@ app.post("/contact", async (req, res) => {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    res.json({ 
+    return res.status(200).json({ 
       success: true, 
       message: "Contact form submitted successfully" 
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ 
+      return res.status(400).json({ 
         success: false, 
         message: error.errors[0].message 
       });
     } else {
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         message: "Internal server error" 
       });
     }
   }
-});
-
-// Fallback for unhandled routes
-app.all('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API route not found'
-  });
-});
-
-export default app; 
+} 
