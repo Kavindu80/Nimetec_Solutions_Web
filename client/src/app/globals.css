@@ -1,0 +1,264 @@
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Enhanced GPU acceleration for elements that animate frequently */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000px;
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+/* Super-smooth scrolling optimizations */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For smooth iOS scrolling */
+  scroll-padding-top: 70px; /* Account for fixed header height */
+  overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
+}
+
+body {
+  overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
+  scroll-snap-type: y proximity; /* Gentle scroll snapping */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #fafafa; /* Light, eye-friendly background */
+  color: #2d3748; /* Softer than pure black for better readability */
+}
+
+/* Section scroll snap points - enhanced for better performance */
+section {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  contain: layout style paint;
+}
+
+/* Improved text gradient for premium look */
+.text-gradient {
+  background: linear-gradient(135deg, #FF5E3A 0%, #FF2A68 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  position: relative;
+  font-weight: 700;
+  filter: drop-shadow(0 2px 4px rgba(255, 94, 58, 0.2));
+}
+
+/* Enhanced logo styles */
+.logo-gradient {
+  background: linear-gradient(135deg, #FF5E3A 0%, #FF2A68 100%);
+  box-shadow: 
+    0 4px 6px -1px rgba(255, 94, 58, 0.2),
+    0 2px 4px -1px rgba(255, 42, 104, 0.1);
+  position: relative;
+  isolation: isolate;
+}
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))
+         drop-shadow(0 0 4px rgba(255, 94, 58, 0.3));
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.logo-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2));
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* 3D perspective container - optimized */
+.perspective-3d {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Enhanced industrial patterns */
+.industrial-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.industrial-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+/* Premium button styles */
+.gradient-bg {
+  background: linear-gradient(135deg, #FF5E3A, #FF2A68);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Optimized animations with hardware acceleration */
+@keyframes slide-in-left {
+  from {
+    transform: translate3d(-30px, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translate3d(30px, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Advanced animation effects */
+@keyframes pulse-subtle {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Optimized blob animation */
+@keyframes blob {
+  0% { 
+    transform: translate(0px, 0px) scale(1);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+  33% { 
+    transform: translate(30px, -50px) scale(1.1);
+    border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+  }
+  66% { 
+    transform: translate(-20px, 20px) scale(0.9);
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  100% { 
+    transform: translate(0px, 0px) scale(1);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+}
+
+.animate-blob {
+  animation: blob 20s ease-in-out infinite alternate;
+  will-change: transform, border-radius;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #FF5E3A, #FF2A68);
+  border-radius: 6px;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #FF2A68, #FF5E3A);
+  border-width: 2px;
+}
+
+/* Optimize images */
+img {
+  object-fit: cover;
+  max-width: 100%;
+  height: auto;
+  filter: contrast(1.02) brightness(1.02); /* Subtle image enhancement */
+  content-visibility: auto; /* Modern browsers will lazily load images outside viewport */
+}
+
+/* Reduce motion when preferred */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    scroll-snap-type: none !important;
+  }
+}
+
+/* Additional responsive adjustments */
+@media (max-width: 768px) {
+  .text-gradient {
+    background: linear-gradient(135deg, #FF5E3A 0%, #FF2A68 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  
+  body {
+    overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+  }
+}
+
+/* Eye comfort styles */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1a1a;
+    color: #e2e8f0;
+  }
+}
+
+/* Reduce eye strain in low light */
+@media (prefers-color-scheme: dark) {
+  img {
+    filter: brightness(0.9) contrast(1.1);
+  }
+  
+  .text-gradient {
+    filter: drop-shadow(0 2px 4px rgba(255, 94, 58, 0.3));
+  }
+} 
