@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import compression from "compression";
 import helmet from "helmet";
-import path from "path";
 
 const app = express();
 
@@ -53,58 +52,67 @@ app.use((req, res, next) => {
 // For Vercel, we need to export the app as a module
 export default app;
 
-// Configure the server based on environment
+// Only run the server directly when not on Vercel
+if (process.env.VERCEL !== "1") {
 (async () => {
   const server = await registerRoutes(app);
 
-  // Global error handler
+    // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    // Don't expose error details in production
-    const errorResponse = process.env.NODE_ENV === 'production' 
-      ? { message } 
-      : { message, stack: err.stack };
+      // Don't expose error details in production
+      const errorResponse = process.env.NODE_ENV === 'production' 
+        ? { message } 
+        : { message, stack: err.stack };
 
-    res.status(status).json(errorResponse);
-    
-    // Only log errors in development or if they're serious in production
-    if (process.env.NODE_ENV !== 'production' || status >= 500) {
-      console.error(err);
-    }
+      res.status(status).json(errorResponse);
+      
+      // Only log errors in development or if they're serious in production
+      if (process.env.NODE_ENV !== 'production' || status >= 500) {
+        console.error(err);
+      }
   });
 
-  // In Vercel serverless environment, just serve static files
-  if (process.env.VERCEL === "1") {
-    // Ensure we serve static files correctly
-    const distPath = path.resolve(process.cwd(), "dist/public");
-    app.use(express.static(distPath));
-    
-    // SPA fallback
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-    
-    log("Server initialized for Vercel serverless environment");
-  } else {
-    // Local or non-Vercel environment
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
     if (process.env.NODE_ENV === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
 
     // Use process.env.PORT for compatibility with hosting platforms or default to 5000
     const port = process.env.PORT || 5000;
-    server.listen({
-      port,
-      host: "0.0.0.0",
-    }, () => {
+  server.listen({
+    port,
+    host: "0.0.0.0",
+  }, () => {
       log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`);
+  });
+  })().catch(err => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
+} else {
+  // For Vercel serverless environment
+  (async () => {
+    await registerRoutes(app);
+    
+    // Global error handler
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
     });
-  }
-})().catch(err => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+    
+    // In Vercel environment, serve static files
+    serveStatic(app);
+    
+    log("Server initialized for Vercel serverless environment");
+  })().catch(err => {
+    console.error("Failed to initialize server for Vercel:", err);
+  });
+}

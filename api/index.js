@@ -1,6 +1,6 @@
 // Vercel serverless function entry point
 import express from 'express';
-import { z } from 'zod';
+import { z } from "zod";
 
 const app = express();
 app.use(express.json());
@@ -14,20 +14,17 @@ const contactSchema = z.object({
   message: z.string().min(10, "Message must be at least 10 characters long")
 });
 
-// Contact form submission endpoint
-app.post("/contact", async (req, res) => {
+// API endpoint for contact form
+app.post("/api/contact", async (req, res) => {
   try {
     const validatedData = contactSchema.parse(req.body);
     
-    // In a real application, you would:
-    // 1. Save the contact form to a database
-    // 2. Send an email notification to the company
-    // 3. Send a confirmation email to the user
+    // In production, you would:
+    // 1. Save to database
+    // 2. Send notification emails
+    // 3. etc.
     
     console.log("Contact form submission:", validatedData);
-    
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 500));
     
     res.json({ 
       success: true, 
@@ -46,14 +43,6 @@ app.post("/contact", async (req, res) => {
       });
     }
   }
-});
-
-// Fallback for unhandled routes
-app.all('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API route not found'
-  });
 });
 
 export default app; 

@@ -1,24 +1,33 @@
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { useEffect } from 'react';
+import { Link } from 'wouter';
 
 export default function NotFound() {
+  // Log 404 errors for monitoring
+  useEffect(() => {
+    console.error(`404 page not found: ${window.location.pathname}`);
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center max-w-md px-4">
-        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Page Not Found</h2>
-        <p className="text-gray-600 mb-8">
-          The page you are looking for might have been removed, had its name changed, 
-          or is temporarily unavailable.
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground">
+      <div className="container mx-auto flex max-w-3xl flex-col items-center justify-center px-4 py-16 text-center">
+        <h1 className="text-6xl font-bold tracking-tighter sm:text-8xl">404</h1>
+        
+        <p className="mt-4 text-xl text-muted-foreground">
+          Page not found
         </p>
-        <Link href="/">
-          <Button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 font-medium">
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Return to Home
-          </Button>
-        </Link>
-          </div>
+        
+        <p className="mt-4 text-muted-foreground">
+          Sorry, the page you're looking for doesn't exist or has been moved.
+        </p>
+        
+        <div className="mt-8 flex flex-col items-center justify-center gap-4">
+          <Link href="/">
+            <a className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+              Go Home
+            </a>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
