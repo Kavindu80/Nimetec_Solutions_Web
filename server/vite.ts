@@ -26,112 +26,96 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true as true,
   };
 
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        // Don't exit in Vercel environment
-        if (process.env.VERCEL !== "1") {
-          process.exit(1);
-        }
+  try {
+    const vite = await createViteServer({
+      ...viteConfig,
+      configFile: false,
+      customLogger: {
+        ...viteLogger,
+        error: (msg, options) => {
+          viteLogger.error(msg, options);
+          // Don't exit in Vercel environment
+          if (process.env.VERCEL !== "1") {
+            process.exit(1);
+          }
+        },
       },
-    },
-    server: serverOptions,
-    appType: "custom",
-  });
+      server: serverOptions,
+      appType: "custom",
+    });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+    app.use(vite.middlewares);
 
-    try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
-
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
+    // Serve static files from client/public
+    const publicDir = path.resolve(import.meta.dirname, "..", "client", "public");
+    if (fs.existsSync(publicDir)) {
+      app.use(express.static(publicDir));
     }
-  });
+
+    // Serve static files from client/assets
+    const assetsDir = path.resolve(import.meta.dirname, "..", "client", "assets");
+    if (fs.existsSync(assetsDir)) {
+      app.use('/assets', express.static(assetsDir));
+    }
+
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+
+      try {
+        const clientTemplate = path.resolve(
+          import.meta.dirname,
+          "..",
+          "client",
+          "index.html",
+        );
+
+        // always reload the index.html file from disk incase it changes
+        let template = await fs.promises.readFile(clientTemplate, "utf-8");
+        template = template.replace(
+          `src="/src/main.tsx"`,
+          `src="/src/main.tsx?v=${nanoid()}"`,
+        );
+        const page = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+  } catch (err) {
+    console.error("Error setting up Vite:", err);
+    // Fallback to serving static files if Vite fails
+    fallbackServeStatic(app);
+  }
 }
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
-  
-  // For Vercel environment, try to find the build directory in different locations
-  let buildPath = distPath;
-  
-  if (process.env.VERCEL === "1") {
-    // Check if we're in Vercel's production environment
-    const possiblePaths = [
-      distPath,
-      path.resolve(import.meta.dirname, "..", "public"),
-      path.resolve(import.meta.dirname, "public"),
-      path.resolve(process.cwd(), "dist", "public"),
-      path.resolve(process.cwd(), "public")
-    ];
-    
-    for (const testPath of possiblePaths) {
-      if (fs.existsSync(testPath)) {
-        buildPath = testPath;
-        log(`Found build directory at: ${buildPath}`);
-        break;
-      }
-    }
+// Fallback to serving static files if Vite fails
+function fallbackServeStatic(app: Express) {
+  // Serve the client/public directory
+  const publicDir = path.resolve(import.meta.dirname, "..", "client", "public");
+  if (fs.existsSync(publicDir)) {
+    app.use(express.static(publicDir));
   }
 
-  if (!fs.existsSync(buildPath)) {
-    log(`Warning: Could not find the build directory at ${buildPath}`);
-    // Don't throw an error in Vercel environment, as the build might be handled differently
-    if (process.env.VERCEL !== "1") {
-      throw new Error(
-        `Could not find the build directory: ${buildPath}, make sure to build the client first`,
-      );
-    }
-  } else {
-    app.use(express.static(buildPath));
+  // Serve the client/assets directory
+  const assetsDir = path.resolve(import.meta.dirname, "..", "client", "assets");
+  if (fs.existsSync(assetsDir)) {
+    app.use('/assets', express.static(assetsDir));
   }
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    const indexPath = path.resolve(buildPath, "index.html");
+  // Serve client/src directory for development
+  const srcDir = path.resolve(import.meta.dirname, "..", "client", "src");
+  if (fs.existsSync(srcDir)) {
+    app.use('/src', express.static(srcDir));
+  }
+
+  // Serve index.html for all other routes
+  app.use("*", (req, res) => {
+    const indexPath = path.resolve(import.meta.dirname, "..", "client", "index.html");
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
-      // In Vercel environment, if we can't find index.html, serve a simple response
-      if (process.env.VERCEL === "1") {
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Nimtec Solutions</title>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-            </head>
-            <body>
-              <div id="root">Loading application...</div>
-              <script type="module" src="/src/main.tsx"></script>
-            </body>
-          </html>
-        `);
-      } else {
-        res.status(404).send("Not found");
-      }
+      res.status(404).send("Not found");
     }
   });
 }

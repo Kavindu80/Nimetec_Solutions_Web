@@ -13,7 +13,6 @@ export default defineConfig({
   define: {
     // Force development mode in the client code
     'process.env.NODE_ENV': JSON.stringify('development'),
-    '__DEV__': true,
   },
   resolve: {
     alias: {
@@ -26,24 +25,8 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    // Always disable minification to match development mode
     minify: false,
-    // Always enable sourcemaps
     sourcemap: true,
-    assetsDir: "assets",
-    // Disable CSS code splitting to match development mode
-    cssCodeSplit: false,
-    // Ensure we generate a working client-side only build for Vercel
-    ssrManifest: false,
-    // Don't use chunking in development mode
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
-      }
-    }
   },
   server: {
     fs: {
@@ -55,13 +38,8 @@ export default defineConfig({
     }
   },
   css: {
-    // Always enable sourcemaps for CSS
     devSourcemap: true
   },
   // Force development mode
-  mode: "development",
-  // Preserve dynamic imports in development mode
-  optimizeDeps: {
-    disabled: true
-  }
+  mode: "development"
 });
