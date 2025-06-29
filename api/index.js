@@ -1,48 +1,37 @@
-// Vercel serverless function entry point
-import express from 'express';
-import { z } from "zod";
+// Simplified API handler for Vercel serverless functions
+module.exports = (req, res) => {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-const app = express();
-app.use(express.json());
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-// Contact form validation schema
-const contactSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
-  projectType: z.string().min(1, "Project type is required"),
-  message: z.string().min(10, "Message must be at least 10 characters long")
-});
-
-// API endpoint for contact form
-app.post("/api/contact", async (req, res) => {
-  try {
-    const validatedData = contactSchema.parse(req.body);
-    
-    // In production, you would:
-    // 1. Save to database
-    // 2. Send notification emails
-    // 3. etc.
-    
-    console.log("Contact form submission:", validatedData);
-    
-    res.json({ 
-      success: true, 
-      message: "Contact form submitted successfully" 
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ 
-        success: false, 
-        message: error.errors[0].message 
+  // Handle contact form submission
+  if (req.method === 'POST' && req.url === '/api/contact') {
+    try {
+      // In a real application, you would validate and save the contact form
+      res.status(200).json({ 
+        success: true, 
+        message: "Contact form submitted successfully" 
       });
-    } else {
+    } catch (error) {
       res.status(500).json({ 
         success: false, 
         message: "Internal server error" 
       });
     }
+    return;
   }
-});
 
-export default app; 
+  // Default response for all other routes
+  res.status(200).json({ status: "API is running" });
+} 
