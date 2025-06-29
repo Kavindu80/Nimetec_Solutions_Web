@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "mkdir -p public && echo '<!-- Placeholder -->' > public/index.html",
-  "outputDirectory": "public",
+  "outputDirectory": "dist/public",
   "routes": [
-    { "src": "/(.*)", "dest": "/api/server.js" }
+    { "src": "/api/(.*)", "dest": "/api/server.js" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 } 

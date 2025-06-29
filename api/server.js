@@ -91,66 +91,17 @@ module.exports = (req, res) => {
     return;
   }
 
-  // Serve static HTML for all other routes
-  const html = `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Nimtec Solution - Development Mode</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background-color: #fafafa;
-        color: #2d3748;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        text-align: center;
-      }
-      .container {
-        max-width: 800px;
-        padding: 20px;
-      }
-      h1 {
-        color: #4a5568;
-      }
-      p {
-        margin: 20px 0;
-        line-height: 1.6;
-      }
-      .button {
-        display: inline-block;
-        background-color: #4299e1;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 4px;
-        text-decoration: none;
-        font-weight: bold;
-        margin-top: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Nimtec Solution - Development Mode</h1>
-      <p>
-        This is a simplified version of your website running in development mode.
-        The full development environment is available locally with all features.
-      </p>
-      <p>
-        API endpoints are functional. Try the contact form or other API features.
-      </p>
-      <a href="/api" class="button">Check API Status</a>
-    </div>
-  </body>
-</html>
-  `;
-  res.setHeader('Content-Type', 'text/html');
-  res.status(200).send(html);
+  // For API requests, return a simple message
+  if (req.url.startsWith('/api/')) {
+    res.status(200).json({ 
+      message: "API endpoint available", 
+      endpoint: req.url,
+      method: req.method
+    });
+    return;
+  }
+
+  // For all other requests, redirect to the static site
+  res.writeHead(302, { Location: '/' });
+  res.end();
 }; 
