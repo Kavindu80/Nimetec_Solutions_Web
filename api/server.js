@@ -68,7 +68,7 @@ app.use("*", (req, res) => {
   }
 });
 
-// Simplified serverless handler for Vercel
+// Simple handler for Vercel serverless function
 module.exports = (req, res) => {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', true);

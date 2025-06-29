@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "echo '<!-- Placeholder -->' > public/index.html",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "vercel-build": "echo 'No build step needed - using development server directly'",
+    "vercel-build": "npm run build",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "optimize:images": "npx sharp-cli --input \"client/assets/**/*.{jpg,png,webp}\" --output client/assets/optimized --format webp --quality 80",
