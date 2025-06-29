@@ -184,9 +184,7 @@ export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const navRef = useRef<HTMLDivElement>(null);
-  const lastScrollY = useRef(0);
   const { scrollY } = useScroll();
   
   // Transform values for subtle effect based on scroll
@@ -198,64 +196,40 @@ export default function Navigation() {
     ['0px 0px 0px rgba(0,0,0,0)', '0px 10px 20px rgba(0,0,0,0.05)']
   );
 
-  // Optimized scroll handler with throttling and improved visibility logic
+  // Optimized scroll handler with throttling
   const handleScroll = useCallback(() => {
-    const currentScrollY = window.scrollY;
-    
-    // Handle navbar appearance based on scroll
-    if (currentScrollY > 20) {
+    if (window.scrollY > 20 && !isScrolled) {
       setIsScrolled(true);
-      
-      // Show navbar when scrolling up, hide when scrolling down (but not at the top)
-      if (currentScrollY < lastScrollY.current) {
-        // Scrolling up - show navbar
-        setIsVisible(true);
-      } else if (currentScrollY > 100 && currentScrollY > lastScrollY.current) {
-        // Scrolling down and not near the top - hide navbar
-        setIsVisible(false);
-      }
-    } else {
-      // At the top of the page
+    } else if (window.scrollY <= 20 && isScrolled) {
       setIsScrolled(false);
-      setIsVisible(true);
     }
-    
-    // Store the current scroll position
-    lastScrollY.current = currentScrollY;
       
     // Determine active section based on scroll position with a bit of offset
-    const scrollPosition = currentScrollY + 100;
-    const sections = ["home", "services", "portfolio", "about", "contact"];
-    
-    for (const section of sections) {
-      const element = document.getElementById(section);
-      if (element) {
-        const offsetTop = element.offsetTop;
-        const offsetHeight = element.offsetHeight;
-        
-        if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+    const scrollPosition = window.scrollY + 100;
+      const sections = ["home", "services", "portfolio", "about", "contact"];
+      
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const offsetTop = element.offsetTop;
+          const offsetHeight = element.offsetHeight;
+          
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
           if (activeSection !== section) {
             setActiveSection(section);
           }
-          break;
+            break;
+          }
         }
       }
-    }
-  }, [activeSection]);
-
-  // Force navbar visibility when user interacts with it
-  const forceVisibility = useCallback(() => {
-    setIsVisible(true);
-  }, []);
+  }, [isScrolled, activeSection]);
 
   useEffect(() => {
     // Use RAF for smooth scroll handling
-    let rafId: number | null = null;
     let ticking = false;
-    
     const onScroll = () => {
       if (!ticking) {
-        rafId = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
           handleScroll();
           ticking = false;
         });
@@ -264,36 +238,16 @@ export default function Navigation() {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    
-    // Reset visibility if user hasn't scrolled for a while
-    const visibilityTimer = setInterval(() => {
-      if (!ticking && !isVisible) {
-        setIsVisible(true);
-      }
-    }, 3000);
-    
-    // Ensure navigation is visible when page loads
-    setIsVisible(true);
-    
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearInterval(visibilityTimer);
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
-  }, [handleScroll, isVisible]);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [handleScroll]);
 
   const closeMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(false);
+      setIsMobileMenuOpen(false);
   }, []);
   
   const performScroll = useCallback((sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      // Force navbar visibility when scrolling to a section
-      forceVisibility();
-      
       // Update the URL hash without triggering a navigation
       window.history.replaceState({}, '', `/#${sectionId}`);
       
@@ -312,12 +266,9 @@ export default function Navigation() {
       // Update the active section
       setActiveSection(sectionId);
     }
-  }, [forceVisibility]);
+  }, []);
 
   const scrollToSection = useCallback((sectionId: string) => {
-    // Force navbar visibility when clicking a navigation item
-    forceVisibility();
-    
     // First close the mobile menu if it's open
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
@@ -329,7 +280,7 @@ export default function Navigation() {
     } else {
       performScroll(sectionId);
     }
-  }, [isMobileMenuOpen, performScroll, forceVisibility]);
+  }, [isMobileMenuOpen, performScroll]);
 
   const navItems = [
     { name: "Home", id: "home" },
@@ -340,139 +291,128 @@ export default function Navigation() {
   ];
 
   return (
-    <AnimatePresence>
-      <motion.nav
-        ref={navRef}
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ 
-          y: isVisible ? 0 : -100, 
-          opacity: isVisible ? 1 : 0,
-        }}
-        transition={{ 
-          duration: 0.3, 
-          ease: "easeOut"
-        }}
-        style={{ 
-          y: isVisible ? navbarY : -100,
-          opacity: navbarOpacity,
-          boxShadow: navbarShadow,
-          willChange: "transform, opacity, box-shadow",
-          pointerEvents: isVisible ? "auto" : "none"
-        }}
-        className={`fixed fixed-nav top-0 w-full z-50 transition-all duration-300 ${
-          isScrolled 
-            ? "bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-primary/10" 
-            : "bg-transparent backdrop-blur-sm"
-        }`}
-        onMouseEnter={forceVisibility}
-        onFocus={forceVisibility}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Modern Brand Logo - Enhanced */}
-            <motion.div 
-              className="flex items-center cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => scrollToSection("home")}
+    <motion.nav
+      ref={navRef}
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      style={{ 
+        y: navbarY,
+        opacity: navbarOpacity,
+        boxShadow: navbarShadow,
+        willChange: "transform, opacity, box-shadow"
+      }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        isScrolled 
+          ? "bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-primary/10" 
+          : "bg-transparent backdrop-blur-sm"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Modern Brand Logo - Enhanced */}
+          <motion.div 
+            className="flex items-center cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => scrollToSection("home")}
+            style={{ willChange: "transform" }}
+          >
+            <PremiumLogo />
+          </motion.div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-1">
+            <div className="flex items-center space-x-1">
+              {navItems.map((item) => (
+                <NavItem 
+                  key={item.id} 
+                  item={item}
+                  activeSection={activeSection}
+                  onClick={scrollToSection}
+                      />
+              ))}
+            </div>
+            
+            <motion.div
+              className="ml-6"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               style={{ willChange: "transform" }}
             >
-              <PremiumLogo />
-            </motion.div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
-              <div className="flex items-center space-x-1">
-                {navItems.map((item) => (
-                  <NavItem 
-                    key={item.id} 
-                    item={item}
-                    activeSection={activeSection}
-                    onClick={scrollToSection}
-                  />
-                ))}
-              </div>
-              
-              <motion.div
-                className="ml-6"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                style={{ willChange: "transform" }}
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-white hover:text-white transition-all duration-300 px-6 rounded-md group glossy-button"
+                onClick={() => scrollToSection("contact")}
               >
-                <Button 
-                  className="bg-primary hover:bg-primary/90 text-white hover:text-white transition-all duration-300 px-6 rounded-md group glossy-button"
-                  onClick={() => scrollToSection("contact")}
-                >
-                  <span>Get Started</span>
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </Button>
-              </motion.div>
-            </div>
+                <span>Get Started</span>
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </Button>
+            </motion.div>
+          </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                <SheetTrigger asChild>
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-foreground hover:bg-primary/5"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-md border-l border-primary/10">
+                <div className="flex justify-between items-center mb-8 mt-2">
+                  <MobileLogo />
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-foreground hover:bg-primary/5"
+                    onClick={closeMobileMenu}
+                    className="text-foreground hover:bg-muted"
                   >
-                    <Menu className="h-5 w-5" />
+                    <X className="h-5 w-5" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-md border-l border-primary/10">
-                  <div className="flex justify-between items-center mb-8 mt-2">
-                    <MobileLogo />
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={closeMobileMenu}
-                      className="text-foreground hover:bg-muted"
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  <div className="space-y-2 py-4">
+                </div>
+                <div className="space-y-2 py-4">
                     {navItems.map((item) => (
-                      <MobileNavItem
+                    <MobileNavItem
                         key={item.id}
-                        item={item}
-                        activeSection={activeSection}
-                        onClick={scrollToSection}
-                        onClose={closeMobileMenu}
-                      />
+                      item={item}
+                      activeSection={activeSection}
+                      onClick={scrollToSection}
+                      onClose={closeMobileMenu}
+                          />
                     ))}
-                  </div>
-                  <div className="mt-6 pt-6 border-t border-border">
+                </div>
+                <div className="mt-6 pt-6 border-t border-border">
                     <Button 
-                      className="w-full bg-primary hover:bg-primary/90 text-white"
-                      onClick={() => {
-                        scrollToSection("contact");
-                        closeMobileMenu();
-                      }}
+                    className="w-full bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => {
+                      scrollToSection("contact");
+                      closeMobileMenu();
+                    }}
                     >
                       Get Started
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
-        
-        {/* Animated highlight line */}
-        {isScrolled && (
-          <motion.div 
-            className="h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            style={{ willChange: "transform, opacity" }}
-          />
-        )}
-      </motion.nav>
-    </AnimatePresence>
+      </div>
+      
+      {/* Animated highlight line */}
+      {isScrolled && (
+        <motion.div 
+          className="h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          style={{ willChange: "transform, opacity" }}
+        />
+      )}
+    </motion.nav>
   );
 }

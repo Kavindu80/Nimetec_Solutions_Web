@@ -23,7 +23,7 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: true as true,
   };
 
   const vite = await createViteServer({
@@ -33,7 +33,10 @@ export async function setupVite(app: Express, server: Server) {
       ...viteLogger,
       error: (msg, options) => {
         viteLogger.error(msg, options);
-        process.exit(1);
+        // Don't exit in Vercel environment
+        if (process.env.VERCEL !== "1") {
+          process.exit(1);
+        }
       },
     },
     server: serverOptions,
@@ -68,18 +71,67 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  
+  // For Vercel environment, try to find the build directory in different locations
+  let buildPath = distPath;
+  
+  if (process.env.VERCEL === "1") {
+    // Check if we're in Vercel's production environment
+    const possiblePaths = [
+      distPath,
+      path.resolve(import.meta.dirname, "..", "public"),
+      path.resolve(import.meta.dirname, "public"),
+      path.resolve(process.cwd(), "dist", "public"),
+      path.resolve(process.cwd(), "public")
+    ];
+    
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        buildPath = testPath;
+        log(`Found build directory at: ${buildPath}`);
+        break;
+      }
+    }
   }
 
-  app.use(express.static(distPath));
+  if (!fs.existsSync(buildPath)) {
+    log(`Warning: Could not find the build directory at ${buildPath}`);
+    // Don't throw an error in Vercel environment, as the build might be handled differently
+    if (process.env.VERCEL !== "1") {
+      throw new Error(
+        `Could not find the build directory: ${buildPath}, make sure to build the client first`,
+      );
+    }
+  } else {
+    app.use(express.static(buildPath));
+  }
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const indexPath = path.resolve(buildPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      // In Vercel environment, if we can't find index.html, serve a simple response
+      if (process.env.VERCEL === "1") {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Nimtec Solutions</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+            </head>
+            <body>
+              <div id="root">Loading application...</div>
+              <script type="module" src="/src/main.tsx"></script>
+            </body>
+          </html>
+        `);
+      } else {
+        res.status(404).send("Not found");
+      }
+    }
   });
 }

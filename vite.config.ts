@@ -18,14 +18,14 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    minify: 'terser',
+    minify: process.env.NODE_ENV === "production" ? 'terser' : false,
     terserOptions: {
       compress: {
         drop_console: process.env.NODE_ENV === "production",
         drop_debugger: process.env.NODE_ENV === "production",
       }
     },
-    sourcemap: process.env.NODE_ENV !== "production",
+    sourcemap: true,
     assetsDir: "assets",
     // Ensure we generate a working client-side only build for Vercel
     ssrManifest: false,
@@ -78,6 +78,6 @@ export default defineConfig({
     }
   },
   css: {
-    devSourcemap: process.env.NODE_ENV !== "production"
+    devSourcemap: true
   }
 });

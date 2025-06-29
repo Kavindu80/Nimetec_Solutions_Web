@@ -78,42 +78,6 @@ html {
   opacity: 1;
 }
 
-/* Navigation bar fail-safe styles to ensure it's always accessible */
-.fixed-nav {
-  /* Always ensure the nav is in the viewport regardless of JavaScript state */
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-/* If JavaScript fails, ensure navigation is still visible and accessible */
-html:not(.js) .fixed-nav {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
-}
-
-/* Make sure no element can accidentally cover the navigation */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  z-index: 49; /* Just below the nav z-index */
-  pointer-events: none;
-}
-
-/* Show navigation on hover near the top of the screen */
-body:hover::before {
-  height: 20px;
-  pointer-events: auto;
-}
-
-body:hover::before ~ .fixed-nav {
-  transform: translateY(0) !important;
-  opacity: 1 !important;
-}
-
 /* Reduced motion preference - respect user settings */
 @media (prefers-reduced-motion: reduce) {
   *, 
