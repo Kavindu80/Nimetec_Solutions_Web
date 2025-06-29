@@ -1,4 +1,10 @@
 // Simplified API handler for Vercel serverless functions
+const fs = require('fs');
+const path = require('path');
+
+// Simple in-memory cache for static files
+const fileCache = {};
+
 module.exports = (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -8,6 +14,10 @@ module.exports = (req, res) => {
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
+
+  // Add development mode headers
+  res.setHeader('X-Development-Mode', 'true');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
   // Handle OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -32,6 +42,12 @@ module.exports = (req, res) => {
     return;
   }
 
+  // Default response for API routes
+  if (req.url.startsWith('/api')) {
+    res.status(200).json({ status: "API is running in development mode" });
+    return;
+  }
+
   // Default response for all other routes
-  res.status(200).json({ status: "API is running" });
+  res.status(200).json({ status: "API is running in development mode" });
 } 
